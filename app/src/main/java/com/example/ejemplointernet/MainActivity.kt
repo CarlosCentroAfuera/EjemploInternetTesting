@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.bDescarga.setOnClickListener {
+        binding.bDescargaUno.setOnClickListener {
             binding.pbDownloading.visibility = View.VISIBLE
 
             val client = OkHttpClient()
@@ -51,8 +51,7 @@ class MainActivity : AppCompatActivity() {
                         println(body)
                         val gson = Gson()
 
-                        val itemType = object : TypeToken<Planet>() {}.type
-                        val planet = gson.fromJson<Planet>(body, itemType)
+                        val planet = gson.fromJson(body, Planet::class.java)
 
                         println(planet)
 
@@ -62,14 +61,49 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this@MainActivity, "$planet", Toast.LENGTH_SHORT).show()
                         }
                     }
+                }
+            })
+        }
 
+        binding.bDescargaTodos.setOnClickListener {
+            binding.pbDownloading.visibility = View.VISIBLE
+
+            val client = OkHttpClient()
+
+            val request = Request.Builder()
+            request.url("https://swapi.dev/api/planets/")
+
+
+            val call = client.newCall(request.build())
+            call.enqueue( object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    println(e.toString())
+                    CoroutineScope(Dispatchers.Main).launch {
+                        Toast.makeText(this@MainActivity, "Algo ha ido mal", Toast.LENGTH_SHORT).show()
+                        binding.pbDownloading.visibility = View.GONE
+                    }
 
                 }
 
-            }
+                override fun onResponse(call: Call, response: Response) {
+                    println(response.toString())
+                    response.body?.let { responseBody ->
+                        val body = responseBody.string()
+                        println(body)
+                        val gson = Gson()
+
+                        val planet = gson.fromJson(body, PlanetResponse::class.java)
+
+                        println(planet)
 
 
-            )
+                        CoroutineScope(Dispatchers.Main).launch {
+                            binding.pbDownloading.visibility = View.GONE
+                            Toast.makeText(this@MainActivity, "$planet", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            })
         }
     }
 }
